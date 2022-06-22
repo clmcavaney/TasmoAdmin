@@ -696,7 +696,9 @@ function updateRow(row, data, device_status)
 		$("#device-list .idx").removeClass("hidden").show();
 	}
 
-	$(row).find(".version span").html(data.StatusFWR.Version);
+	let versionToGitHubTag = data.StatusFWR.Version.replace(/\([^\)]+\)/, '');
+	console.log(versionToGitHubTag);
+	$(row).find(".version span").html('<a href="https://github.com/arendst/Tasmota/releases/tag/v' + versionToGitHubTag + '">' + data.StatusFWR.Version + '</a>');
 
 
 	if ($(row).hasClass("toggled"))
