@@ -1,5 +1,5 @@
 var ignoreProtectionsTimer;
-$(document).on("ready", function ()
+$(document).ready(function()
 {
 	deviceTools();
 	updateAllStatus();
@@ -211,7 +211,7 @@ function initCommandHelper()
 		$.each(selectedDevices, function (idx, device_id)
 		{
 			console.log(device_id);
-			Sonoff.generic(device_id, cmnd, undefined, function (result)
+			sonoff.generic(device_id, cmnd, undefined, function (result)
 			{
 				console.log(result);
 				let device_name = $("[data-device_id=" + device_id + "]:first")
@@ -256,7 +256,7 @@ function updateStatus()
 					return; //relais 1 will update all others
 				}
 
-				Sonoff.getStatus(device_ip, device_id, device_relais, function (data)
+				sonoff.getStatus(device_ip, device_id, function (data)
 				{
 					if (data
 						&& !data.ERROR
@@ -273,7 +273,7 @@ function updateStatus()
 								{
 
 									let device_relais = $(grouptr).data("device_relais");
-									let device_status = Sonoff.parseDeviceStatus(data, device_relais);
+									let device_status = sonoff.parseDeviceStatus(data, device_relais);
 
 
 									updateRow($(grouptr), data, device_status);
@@ -282,7 +282,7 @@ function updateStatus()
 						} else
 						{
 
-							let device_status = Sonoff.parseDeviceStatus(data, device_relais);
+							let device_status = sonoff.parseDeviceStatus(data, device_relais);
 
 							console.log(device_status);
 							updateRow($(tr), data, device_status);
@@ -357,7 +357,7 @@ function updateAllStatus()
 
 		let timeout = device_holder.find("tbody tr").length * 15; //max 12 sec per device
 
-		Sonoff.getAllStatus(timeout, function (result)
+		sonoff.getAllStatus(timeout, function (result)
 							{
 								device_holder.find("tbody tr").each(function (key, tr)
 																	{
@@ -375,7 +375,7 @@ function updateAllStatus()
 																		{
 																			console.log("[LIST][updateAllStatus][" + device_id + "]MSG => " + JSON.stringify(data));
 
-																			let device_status = Sonoff.parseDeviceStatus(data, device_relais);
+																			let device_status = sonoff.parseDeviceStatus(data, device_relais);
 
 																			$(tr).removeAttr(
 																				"data-original-title"
@@ -468,67 +468,46 @@ function deviceTools()
 		let device_protect_on = $(this).closest("tr").data("device_protect_on");
 		let device_protect_off = $(this).closest("tr").data("device_protect_off");
 
-		if (statusField.find("input").prop("checked"))
-		{
-			if (device_protect_off === 1 && !$(".ignoreProtections").prop("checked"))
-			{
+		const input = statusField.find("input");
+
+		if (input.prop("checked")) {
+			if (device_protect_off === 1 && !$(".ignoreProtections").prop("checked")) {
 				return;
 			}
-			statusField.find("input").removeProp("checked");
-		} else
-		{
-			if (device_protect_on === 1 && !$(".ignoreProtections").prop("checked"))
-			{
+			input.prop("checked", false)
+		} else {
+			if (device_protect_on === 1 && !$(".ignoreProtections").prop("checked")) {
 				return;
 			}
-			statusField.find("input").prop("checked", "checked");
+
+			input.prop("checked", true)
 		}
 
-		$(this).closest("tr").addClass("toggled");
+		statusField.closest("tr").addClass("toggled");
 
-		Sonoff.toggle(
-			device_ip, device_id, device_relais, function (data)
-			{
-				if (data && !data.ERROR && !data.WARNING)
-				{
+		sonoff.toggle(device_ip, device_id, device_relais, function (data) {
+				if (!data || data.ERROR || data.WARNING) {
+					statusField.find("input").parent().addClass("error");
+					return;
+				}
 
-					let device_status = Sonoff.parseDeviceStatus(data, device_relais);
-					console.log("device_status", device_status);
-					if (device_status === "ON")
-					{
-						if (device_protect_off === 1)
-						{
-							statusField.find("input").prop("disabled", "disabled")
-									   .parent().addClass("disabled");
-						} else
-						{
-							statusField.find("input").removeProp("disabled", "disabled")
-									   .parent().removeClass("disabled");
-						}
+				let device_status = sonoff.parseDeviceStatus(data, device_relais);
+				console.log("device_status", device_status);
+				if (device_status === "ON") {
+					if (device_protect_off === 1) {
+						input.prop("disabled", "disabled").parent().addClass("disabled");
+					} else {
+						input.removeProp("disabled", "disabled").parent().removeClass("disabled");
 					}
-				} else if (device_status === "OFF")
-				{
-					{
-						if (device_protect_on === 1)
-						{
-							statusField.find("input").prop("disabled", "disabled")
-									   .parent().addClass("disabled");
-						} else
-						{
-							statusField.find("input").removeProp("disabled", "disabled")
-									   .parent().removeClass("disabled");
-						}
+				} else if (device_status === "OFF") {
+					if (device_protect_on === 1) {
+						input.prop("disabled", "disabled").parent().addClass("disabled");
+					} else {
+						input.removeProp("disabled", "disabled").parent().removeClass("disabled");
 					}
-				} else
-				{
-					statusField.find("input")
-						//.removeProp( "checked" )
-							   .parent().addClass("error");
 				}
 			}
 		);
-
-
 	});
 
 	$("#deleteDeviceModal").on("show.bs.modal", function (event)
@@ -549,7 +528,7 @@ function deviceTools()
 	{
 		e.preventDefault();
 		let device_id = $(this).closest("tr").data("device_id");
-		Sonoff.generic(device_id, "Restart", 1);
+		sonoff.generic(device_id, "Restart", 1);
 
 	});
 
@@ -589,10 +568,10 @@ function deviceTools()
 				.removeClass("dont-update");
 			if (target == "device")
 			{
-				Sonoff.updateConfig(device_id, cmnd, newvalue, updateStatus);
+				sonoff.updateConfig(device_id, cmnd, newvalue, updateStatus);
 			} else if (target == "csv")
 			{
-				Sonoff.setDeviceValue(device_id, field, newvalue, td);
+				sonoff.setDeviceValue(device_id, field, newvalue, td);
 			}
 		} else
 		{
@@ -922,7 +901,7 @@ function updateRow(row, data, device_status)
 	$(row).find(".vcc span").html(data.StatusSTS.Vcc !== undefined ? data.StatusSTS.Vcc + "V" : "?");
 
 
-	let device_hostname = Sonoff.parseDeviceHostname(data);
+	let device_hostname = sonoff.parseDeviceHostname(data);
 	if (device_hostname !== false)
 	{
 		$(row).data("keywords", $(row).data("keywords") + " " + device_hostname);

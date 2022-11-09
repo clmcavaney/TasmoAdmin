@@ -1,7 +1,9 @@
 <?php
 
+use Goutte\Client;
 use TasmoAdmin\Helper\GuzzleFactory;
 use TasmoAdmin\Helper\TasmotaHelper;
+use TasmoAdmin\Helper\TasmotaOtaScraper;
 
 $msg      = FALSE;
 $settings = [];
@@ -21,13 +23,21 @@ if (isset($_POST) && !empty($_POST)) {
 		if (!isset($settings["ota_server_ssl"])) {
 			$settings["ota_server_ssl"] = "0";
 		}
-		if (!isset($settings["use_gzip_package"])) {
-			$settings["use_gzip_package"] = "0";
-		}
+        if (!isset($settings["force_upgrade"])) {
+            $settings["force_upgrade"] = "0";
+        }
 		if (!isset($settings["show_search"])) {
 			$settings["show_search"] = "0";
 		}
-		
+
+        if (!isset($settings["update_fe_check"])) {
+            $settings["update_fe_check"] = "0";
+        }
+
+        if (!isset($settings["update_be_check"])) {
+            $settings["update_be_check"] = "0";
+        }
+
 		if (!isset($settings["password"]) || empty($settings["password"])
 			|| $settings["password"] == "") {
 			unset($settings["password"]);
@@ -51,8 +61,17 @@ if (isset($_POST) && !empty($_POST)) {
 
 $config = array_merge($Config->readAll(), $settings);
 
-$tasmotaHelper = new TasmotaHelper(new Parsedown(), GuzzleFactory::getClient($Config));
+$tasmotaHelper = new TasmotaHelper(
+        new Parsedown(),
+        GuzzleFactory::getClient($Config),
+        new TasmotaOtaScraper($Config->read('auto_update_channel'), new Client()),
+        $Config->read("auto_update_channel")
+);
 $tasmotaReleases = $tasmotaHelper->getReleases();
+
+
+$autoFirmwareChannels = ['stable', 'dev'];
+
 ?>
 
 
@@ -220,7 +239,10 @@ $tasmotaReleases = $tasmotaHelper->getReleases();
 			
 			
 			<div class="form-row">
-				<div class="form-group col col-12 col-sm-6">
+                <div class="form-group col col-12">
+                    <h2><?php echo __("CONFIG_AUTO_FIRMWARE_TITLE", "USER_CONFIG"); ?></h2>
+                </div>
+				<div class="form-group col col-12 col-sm-3">
 					<label for="update_automatic_lang">
 						<?php echo __("CONFIG_AUTOMATIC_FW", "USER_CONFIG"); ?>
 					</label>
@@ -231,29 +253,47 @@ $tasmotaReleases = $tasmotaHelper->getReleases();
 						
 						<?php foreach ($tasmotaReleases as $tr): ?>
 							<option value='<?php echo $tr; ?>'
-								<?php echo $config["update_automatic_lang"] == $tr ? "selected=\selected\"" : ""; ?>
+								<?php echo $config["update_automatic_lang"] == $tr ? "selected=\"selected\"" : ""; ?>
 							>
 								<?php echo $tr ?>
 							</option>
 						<?php endforeach; ?>
 					</select>
 				</div>
-				<div class="form-group col col-12 col-sm-6">
-					<label>&nbsp;</label>
-					<div class="form-check custom-control custom-checkbox mb-5">
-						<input class="form-check-input custom-control-input"
-							   type="checkbox"
-							   value="1"
-							   id="use_gzip_package"
-							   name='use_gzip_package' <?php echo $config["use_gzip_package"] == "1"
-							? "checked=\"checked\"" : ""; ?>>
-						<label class="form-check-label custom-control-label" for="use_gzip_package" style='top:3px;'>
-							<?php echo __("CONFIG_GZIP_PACKAGE", "USER_CONFIG"); ?>
-						</label>
-					</div>
-				</div>
+                <div class="form-group col col-12 col-sm-3">
+                    <label for="auto_update_channel">
+                        <?php echo __("CONFIG_AUTO_FIRMWARE_CHANNEL_HELP", "USER_CONFIG"); ?>
+                    </label>
+                    <select class="form-control custom-select" id="auto_update_channel" name='auto_update_channel'>
+                        <?php foreach ($autoFirmwareChannels as $channel): ?>
+                            <option value="<?php echo $channel ?>"
+                                <?php echo $config["auto_update_channel"] === $channel ? "selected=\"selected\"" : ""; ?>
+                            ><?php echo $channel ?>
+                            </option>
+                        <?php endforeach; ?>
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group col col-12 col-sm-3">
+                    <label>&nbsp;</label>
+                    <div class="form-check custom-control custom-checkbox mb-5">
+                        <input class="form-check-input custom-control-input"
+                               type="checkbox"
+                               value="1"
+                               id="force_upgrade"
+                               name='force_upgrade' <?php echo $config["force_upgrade"] == "1"
+                            ? "checked=\"checked\"" : ""; ?>>
+                        <label class="form-check-label custom-control-label" for="force_upgrade" style='top:3px;'>
+                            <?php echo __("CONFIG_FORCE_UPGRADE", "USER_CONFIG"); ?>
+                        </label>
+                        <p class="small" style="padding-top:15px;">
+                            <?php echo __("CONFIG_FORCE_UPGRADE_HELP", "USER_CONFIG"); ?>
+
+                        </p>
+                    </div>
+                </div>
 			</div>
-			<div class="form-row  mt-5">
+			<div class="form-row mt-5">
 				<div class="form-group col col-12 col-sm-6">
 					<label for="refreshtime"><?php echo __("CONFIG_REFRESHTIME", "USER_CONFIG"); ?></label>
 					<select class="form-control custom-select" id="refreshtime" name='refreshtime'>
@@ -342,6 +382,40 @@ $tasmotaReleases = $tasmotaHelper->getReleases();
 					</div>
 				</div>
 			</div>
+
+            <div class="form-row">
+                <div class="form-group col col-12">
+                    <h2><?php echo __("CONFIG_UPDATE_CHECK", "USER_CONFIG"); ?></h2>
+                </div>
+                <div class="form-check custom-control custom-checkbox mb-5"">
+                    <input class="form-check-input custom-control-input"
+                           type="checkbox"
+                           value="1"
+                           id="cb_update_fe_check"
+                           name='update_fe_check' <?php echo $config["update_fe_check"] == "1"
+                        ? "checked=\"checked\"" : ""; ?>>
+                    <label class="form-check-label custom-control-label" for="cb_update_fe_check">
+                        <?php echo __("CONFIG_UPDATE_FE_CHECK", "USER_CONFIG"); ?>
+                    </label>
+                    <p class="small">
+                        <?php echo __("CONFIG_UPDATE_FE_CHECK_HELP", "USER_CONFIG"); ?>
+                    </p>
+                </div>
+                <div class="form-check custom-control custom-checkbox mb-5"">
+                    <input class="form-check-input custom-control-input"
+                           type="checkbox"
+                           value="1"
+                           id="cb_update_be_check"
+                           name='update_be_check' <?php echo $config["update_be_check"] == "1"
+                        ? "checked=\"checked\"" : ""; ?>>
+                    <label class="form-check-label custom-control-label" for="cb_update_be_check">
+                        <?php echo __("CONFIG_UPDATE_BE_CHECK", "USER_CONFIG"); ?>
+                    </label>
+                    <p class="small">
+                        <?php echo __("CONFIG_UPDATE_BE_CHECK_HELP", "USER_CONFIG"); ?>
+                    </p>
+                </div>
+            </div>
 			
 			<div class="form-row  mt-5">
 				<div class='d-none d-sm-inline-flex col flex-column'></div>

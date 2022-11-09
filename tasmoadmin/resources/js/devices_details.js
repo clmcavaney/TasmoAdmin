@@ -1,12 +1,6 @@
-$( document ).on( "ready", function () {
-	$( ".svg-inject" ).svgInject( function () {
-		// Injection complete
-	} );
-	
+$(document).ready(function() {
 	updateAllStatus();
-	
 } );
-
 
 function updateAllStatus() {
 	
@@ -20,7 +14,7 @@ function updateAllStatus() {
 		
 		var timeout = device_holder.find( 'card' ).length * 15; //max 12 sec per device
 		
-		Sonoff.getAllStatus( timeout, function ( result ) {
+		sonoff.getAllStatus( timeout, function ( result ) {
 			                     device_holder.find( '.card' ).each( function ( key, card ) {
 				                     var device_id     = $( card ).data( "device_id" );
 				                     var device_relais = $( card ).data( "device_relais" );
@@ -163,7 +157,7 @@ function updateCard( card, data, device_status ) {
 	
 	
 	var img = $( card ).find( ".devices-switch-container img" );
-	var src = _RESOURCESURL_ + "img/device_icons/"
+	var src = config.resource_url + "img/device_icons/"
 	          + img.data( "icon" )
 	          + "_%pw.png?v=160";
 	

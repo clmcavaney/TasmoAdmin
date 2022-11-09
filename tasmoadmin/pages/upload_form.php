@@ -1,12 +1,21 @@
 <?php
 
+use Goutte\Client;
 use TasmoAdmin\Helper\GuzzleFactory;
 use TasmoAdmin\Helper\TasmotaHelper;
+use TasmoAdmin\Helper\TasmotaOtaScraper;
 
-$tasmotaHelper = new TasmotaHelper(new Parsedown(), GuzzleFactory::getClient($Config));
+$tasmotaHelper = new TasmotaHelper(
+    new Parsedown(),
+    GuzzleFactory::getClient($Config),
+    new TasmotaOtaScraper($Config->read('auto_update_channel'), new Client()),
+    $Config->read("auto_update_channel")
+);
 $releaseNotes = $tasmotaHelper->getReleaseNotes();
 $changelog = $tasmotaHelper->getChangelog();
 $releases = $tasmotaHelper->getReleases();
+
+$fwAsset = $Config->read("update_automatic_lang");
 
 ?>
 <div class='row justify-content-sm-center'>
@@ -105,13 +114,13 @@ $releases = $tasmotaHelper->getReleases();
 					</label>
 					
 					<select class="form-control custom-select" id="update_automatic_lang" name='update_automatic_lang'>
-						<?php if ($Config->read("update_automatic_lang") == ""): ?>
+						<?php if ($fwAsset === ""): ?>
 							<option><?php echo __("PLEASE_SELECT"); ?></option>
 						<?php endif; ?>
 						
 						<?php foreach ($releases as $tr): ?>
 							<option value='<?php echo $tr; ?>'
-								<?php echo $Config->read("update_automatic_lang") == $tr ? "selected=\selected\"" : ""; ?>
+								<?php echo $fwAsset === $tr ? "selected=\selected\"" : ""; ?>
 							>
 								<?php echo $tr; ?>
 							</option>
@@ -120,21 +129,6 @@ $releases = $tasmotaHelper->getReleases();
 					
 					</select>
 				</div>
-				<div class="form-group col col-12 col-sm-3">
-					<div class="form-check custom-control custom-checkbox mb-3" style='margin-top: 35px;'>
-						<input class="form-check-input custom-control-input"
-							   type="checkbox"
-							   value="1"
-							   autofocus="autofocus"
-							   id="use_gzip_package"
-							   name='use_gzip_package' <?php echo $Config->read("use_gzip_package") == "1"
-							? "checked=\"checked\"" : ""; ?>>
-						<label class="form-check-label custom-control-label" for="use_gzip_package" style='top:3px;'>
-							<?php echo __("CONFIG_GZIP_PACKAGE", "USER_CONFIG"); ?>
-						</label>
-					</div>
-				</div>
-
 			</div>
 			<div class='form-row'>
 				<div class="col col-12 col-sm-3">
@@ -166,9 +160,6 @@ $releases = $tasmotaHelper->getReleases();
 				<div class='changelog'>
 					<?php echo $releaseNotes; ?>
 				</div>
-				<div class='changelog'>
-					<?php echo $changelog; ?>
-				</div>
 			</div>
 			<div class='col col-12 col-md-6'>
 				<div class='changelog'>
@@ -180,12 +171,12 @@ $releases = $tasmotaHelper->getReleases();
 			</div>
 		</div>
 	</div>
-
 </div>
 
 <script>
-    $("#automatic").on("click", function (e)
-    {
-        $("#new_firmware").removeProp("required");
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('#automatic').addEventListener('click', () => {
+            document.querySelector('#new_firmware').removeAttribute('required');
+        })
     });
 </script>

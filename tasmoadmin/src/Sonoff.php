@@ -14,17 +14,16 @@ class Sonoff
 {
     public const COMMAND_INFO_STATUS_ALL = 'status 0';
 
-    private Client $client;
-
     private DeviceRepository $deviceRepository;
 
-    public function __construct(?Client $client = null)
+    private Client $client;
+
+    public function __construct(DeviceRepository  $deviceRepository, ?Client $client = null)
     {
+        $this->deviceRepository = $deviceRepository;
         $this->client = $client ?? new Client([
-                'connect_timeout' => 10,
-                'timeout' => 10,
-            ]);
-        $this->deviceRepository = new DeviceRepository(_CSVFILE_, _TMPDIR_);
+            'timeout' => 5,
+        ]);
     }
 
     public function getAllStatus(Device $device): stdClass
@@ -65,12 +64,11 @@ class Sonoff
             $data = new stdClass();
             $data->ERROR = __("JSON_ERROR", "API") . " => " . json_last_error() . ": " . json_last_error_msg();
             $data->ERROR .= "<br/><strong>" . __("JSON_ERROR_CONTACT_DEV", "API", [$result]) . "</strong>";
-            $data->ERROR .= "<br/>" . __("JSON_ANSWER", "API") . " => " . print_r($data, TRUE);
-
+            $data->ERROR .= "<br/>" . __("JSON_ANSWER", "API") . " => " . print_r($data, true);
         }
-        $skipWarning = FALSE;
-        if (strpos($cmnd, "Backlog") !== FALSE) {
-            $skipWarning = TRUE;
+        $skipWarning = false;
+        if (strpos($cmnd, "Backlog") !== false) {
+            $skipWarning = true;
         }
 
         if (!$skipWarning && isset($data->WARNING) && !empty($data->WARNING) && $try === 1) {
@@ -80,7 +78,7 @@ class Sonoff
             if (!isset($webLog->WARNING) && empty($webLog->WARNING)) {
                 $data = $this->doRequest($device, $cmnd, $try);
             }
-        } else if (empty($data->ERROR)) {
+        } elseif (empty($data->ERROR)) {
             $data = $this->compatibility($data);
         }
 
@@ -104,22 +102,22 @@ class Sonoff
      * This fixes wrong formated json answer form Tasmota Version 5.10.0
      * Example wrong format: dev/json_error_5100.json
      *
-     * @param ?string $string
+     * @param string $string
      *
      * @return string
      */
-    private function fixJsonFormatV5100(?string $string): string
+    private function fixJsonFormatV5100(string $string): string
     {
         $string = substr($string, strpos($string, "STATUS = "));
-        if (strpos($string, "POWER = ") !== FALSE) {
+        if (strpos($string, "POWER = ") !== false) {
             $string = substr($string, strpos($string, "{"));
             $string = substr($string, 0, strrpos($string, "}") + 1);
         }
-        if (strpos($string, "ERGEBNIS = ") !== FALSE) {
+        if (strpos($string, "ERGEBNIS = ") !== false) {
             $string = substr($string, strpos($string, "{"));
             $string = substr($string, 0, strrpos($string, "}") + 1);
         }
-        if (strpos($string, "RESULT = ") !== FALSE) {
+        if (strpos($string, "RESULT = ") !== false) {
             $string = substr($string, strpos($string, "{"));
             $string = substr($string, 0, strrpos($string, "}") + 1);
         }
@@ -228,7 +226,6 @@ class Sonoff
 
         $offArray = explode(
             ", ",
-
             strtolower(
                 ""
 
@@ -247,7 +244,6 @@ class Sonoff
         );
         $onArray = explode(
             ", ",
-
             strtolower(
                 ""
 
@@ -266,7 +262,7 @@ class Sonoff
         );
 
 
-        $state = NULL;
+        $state = null;
 
         //status 0 request for 1 relais
         if (isset($status->StatusSTS->POWER)) {
@@ -311,9 +307,6 @@ class Sonoff
 
         //status 0 request for multi relais
         while (isset($status->StatusSTS->$power)) {
-            $state = NULL;
-
-
             $state = $status->StatusSTS->$power;
             if (isset($status->StatusSTS->$power->STATE)) {
                 $state = $status->StatusSTS->$power->STATE;
@@ -344,9 +337,6 @@ class Sonoff
 
         //toggle request for multi relais
         while (isset($status->$power)) {
-            $state = NULL;
-
-
             $state = $status->$power;
             if (isset($status->$power->STATE)) {
                 $state = $status->$power->STATE;
@@ -442,12 +432,7 @@ class Sonoff
         return $status->MqttRetry;
     }
 
-    /**
-     * @param $ip
-     *
-     * @return mixed
-     */
-    public function getTelePeriod($device)
+    public function getTelePeriod(Device $device): string
     {
         $cmnd = "TelePeriod";
 
@@ -464,12 +449,7 @@ class Sonoff
         return $status->TelePeriod;
     }
 
-    /**
-     * @param $ip
-     *
-     * @return mixed
-     */
-    public function getSensorRetain($device)
+    public function getSensorRetain(Device $device): string
     {
         $cmnd = "SensorRetain";
 
@@ -486,12 +466,8 @@ class Sonoff
         return $status->SensorRetain;
     }
 
-    /**
-     * @param $ip
-     *
-     * @return mixed
-     */
-    public function getMqttFingerprint($device)
+
+    public function getMqttFingerprint(Device $device): string
     {
         $cmnd = "MqttFingerprint";
 
@@ -511,12 +487,7 @@ class Sonoff
         return $status->MqttFingerprint;
     }
 
-    /**
-     * @param $ip
-     *
-     * @return mixed
-     */
-    public function getPrefixe($device)
+    public function getPrefixe(Device $device): stdClass
     {
         $cmnds = ["Prefix1", "Prefix2", "Prefix3"];
 
@@ -527,14 +498,12 @@ class Sonoff
             if (!empty($tmp->Command) && $tmp->Command === "Unknown") {
                 $status->$cmnd = "";
             } else {
-
                 if (!empty($status->ERROR)) {
                     $status->$cmnd = "";
                 } else {
                     $status->$cmnd = $tmp->$cmnd;
                 }
             }
-
         }
 
         unset($tmp);
@@ -542,12 +511,7 @@ class Sonoff
         return $status;
     }
 
-    /**
-     * @param $ip
-     *
-     * @return mixed
-     */
-    public function getStateTexts($device)
+    public function getStateTexts(Device $device): stdClass
     {
         $cmnds = ["StateText1", "StateText2", "StateText3", "StateText4"];
 
@@ -616,7 +580,7 @@ class Sonoff
             $promises[$device->id] = $this->client->getAsync($url);
         }
 
-        $responses = Promise\settle($promises)->wait();
+        $responses = Promise\Utils::settle($promises)->wait();
 
         $results = [];
         foreach ($responses as $deviceId => $response) {
@@ -678,7 +642,7 @@ class Sonoff
             $promises[$url] = $this->client->getAsync($url);
         }
 
-        $responses = Promise\settle($promises)->wait();
+        $responses = Promise\Utils::settle($promises)->wait();
 
         $results = [];
         foreach ($responses as $response) {
@@ -701,7 +665,7 @@ class Sonoff
     public function decodeOptions($options)
     {
         if (empty($options)) {
-            return FALSE;
+            return false;
         }
         $a_setoption = [
             //Tasmota\tools\decode-status.py
@@ -760,31 +724,36 @@ class Sonoff
 
     private function processResult(string $result): ?stdClass
     {
-        $result = json_decode($result);
+        $data = json_decode($result);
         if (json_last_error() === JSON_ERROR_CTRL_CHAR) {  // https://github.com/TasmoAdmin/TasmoAdmin/issues/78
             $result = preg_replace('/[[:cntrl:]]/', '', $result);
-            $result = json_decode($result);
-        } elseif (json_last_error() !== JSON_ERROR_NONE) {
-            $result = json_decode($this->fixJsonFormatv5100($result));
-        } elseif (json_last_error() !== JSON_ERROR_NONE) {
-            $result = json_decode($this->fixJsonFormatv8500($result));
-        } elseif (json_last_error() !== JSON_ERROR_NONE) {
-            $result = new stdClass();
-            $result->ERROR = __("JSON_ERROR", "API")
+            $data = json_decode($result);
+        }
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $data = json_decode($this->fixJsonFormatv5100($result));
+        }
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $data = json_decode($this->fixJsonFormatv8500($result));
+        }
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $data = new stdClass();
+            $data->ERROR = __("JSON_ERROR", "API")
                 . " => "
                 . json_last_error()
                 . ": "
                 . json_last_error_msg();
-            $result->ERROR .= "<br/><strong>"
+            $data->ERROR .= "<br/><strong>"
                 . __("JSON_ERROR_CONTACT_DEV", "API", [$result])
                 . "</strong>";
-            $result->ERROR .= "<br/>" . __("JSON_ANSWER", "API") . " => " . print_r($result, TRUE);
+            $data->ERROR .= "<br/>" . __("JSON_ANSWER", "API") . " => " . print_r($result, true);
         }
 
-        if (isset($result) && empty($result->ERROR)) {
-            $result = $this->compatibility($result);
+        if (isset($data) && empty($result->ERROR)) {
+            $data = $this->compatibility($data);
         }
 
-        return $this->stateTextsDetection($result);
+        return $this->stateTextsDetection($data);
     }
 }

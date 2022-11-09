@@ -2,9 +2,11 @@
 
 use TasmoAdmin\Helper\FirmwareFolderHelper;
 use TasmoAdmin\Helper\GuzzleFactory;
+use TasmoAdmin\Helper\GzipHelper;
 use TasmoAdmin\Helper\OtaHelper;
 use TasmoAdmin\Helper\TasmotaHelper;
-use TasmoAdmin\Helper\UrlHelper;
+use TasmoAdmin\Helper\TasmotaOtaScraper;
+use Goutte\Client;
 use TasmoAdmin\Update\FirmwareChecker;
 use TasmoAdmin\Update\FirmwareDownloader;
 
@@ -13,9 +15,7 @@ $error                 = FALSE;
 $firmwarefolder        = _DATADIR_ . "firmwares/";
 $minimal_firmware_path = "";
 $new_firmware_path     = "";
-
-$use_gzip_package  = isset($_REQUEST["use_gzip_package"]) ? $_REQUEST["use_gzip_package"] : "0";
-$Config->write("use_gzip_package", $use_gzip_package);
+$targetVersion     = "";
 
 FirmwareFolderHelper::clean($firmwarefolder);
 
@@ -54,16 +54,12 @@ if (isset($_REQUEST["upload"])) {
 				throw new RuntimeException(
 					__("UPLOAD_FIRMWARE_MINIMAL_TOO_BIG", "DEVICE_UPDATE", ["maxsize" => "502kb"])
 				);
-			}		
-			if ($_FILES['minimal_firmware']["type"] == "application/gzip"
-			 || $_FILES['minimal_firmware']["type"] == "application/x-gzip") {
-					$ext = "bin.gz";
-					$useGZIP = 1;
 			}
-			elseif ($_FILES['minimal_firmware']["type"] == "application/octet-stream"
-					 || $_FILES['minimal_firmware']["type"] == "application/macbinary") {
+			if (in_array($_FILES['minimal_firmware']["type"], ["application/gzip", "application/x-gzip"])) {
+					$ext = "bin.gz";
+			}
+			elseif (in_array($_FILES['minimal_firmware']["type"], ["application/octet-stream", "application/macbinary"])) {
 					$ext = "bin";
-					$useGZIP = 0;
 			}
 			else {
 				throw new RuntimeException(
@@ -124,15 +120,11 @@ if (isset($_REQUEST["upload"])) {
 		if ($_FILES['new_firmware']['size'] > 1000000) {
 			throw new RuntimeException(__("UPLOAD_FIRMWARE_FULL_TOO_BIG", "DEVICE_UPDATE"));
 		}
-		if ($_FILES['new_firmware']["type"] == "application/gzip"
-		 || $_FILES['new_firmware']["type"] == "application/x-gzip") {
+        if (in_array($_FILES['new_firmware']["type"], ["application/gzip", "application/x-gzip"])) {
 				$ext = "bin.gz";
-				$useGZIP = 1;
 		}
-		elseif ($_FILES['new_firmware']["type"] == "application/octet-stream"
-				 || $_FILES['new_firmware']["type"] == "application/macbinary") {
+        elseif (in_array($_FILES['new_firmware']["type"], ["application/octet-stream", "application/macbinary"])) {
 				$ext = "bin";
-				$useGZIP = 0;
 		}
 		else {
 			throw new RuntimeException(
@@ -162,14 +154,13 @@ if (isset($_REQUEST["upload"])) {
 	}
 }
 elseif (isset($_REQUEST["auto"])) {
-    $tasmotaHelper = new TasmotaHelper(new Parsedown(), GuzzleFactory::getClient($Config));
-
-	$useGZIP  = $Config->read("use_gzip_package");
-	if ($useGZIP === "1") {
-		$ext = "bin.gz";
-	} else {
-		$ext = "bin";
-	}
+    $client = GuzzleFactory::getClient($Config);
+    $tasmotaHelper = new TasmotaHelper(
+        new Parsedown(),
+        $client,
+        new TasmotaOtaScraper($Config->read('auto_update_channel'), new Client()),
+        $Config->read("auto_update_channel")
+    );
 
 	//File to save the contents to
 	if (!empty($_REQUEST["update_automatic_lang"])) {
@@ -180,16 +171,17 @@ elseif (isset($_REQUEST["auto"])) {
 	if ($fwAsset !== "") {
         $firmwareDownloader = new FirmwareDownloader(GuzzleFactory::getClient($Config), $firmwarefolder);
         try {
-            $result = $tasmotaHelper->getLatestFirmwares($ext, $fwAsset);
-            $minimal_firmware_path= $firmwareDownloader->download($result->getMinimalFirmwareUrl());
-            $new_firmware_path = $firmwareDownloader->download($result->getFirmwareUrl());
+            $result = $tasmotaHelper->getLatestFirmwares($fwAsset);
 
-			$withGzip = $useGZIP ? "true" : "false";
+            // We need minimal firmware downloaded for upgrade to work
+            $minimal_firmware_path = $firmwareDownloader->download($result->getMinimalFirmwareUrl());
+            $new_firmware_path = $firmwareDownloader->download($result->getFirmwareUrl());
+            $targetVersion = $result->getTagName();
 			$msg .= __("AUTO_SUCCESSFULL_DOWNLOADED", "DEVICE_UPDATE") . "<br/>";
-			$msg .= __("ASSET", "DEVICE_UPDATE") . ": " . $fwAsset . " | Gzip: " . $withGzip . " | " . __(
+			$msg .= __("ASSET", "DEVICE_UPDATE") . ": " . $fwAsset . " | " . __(
 					"VERSION",
 					"DEVICE_UPDATE"
-				) . ": " . $result->getTagName() . " | " . __("DATE", "DEVICE_UPDATE") . " " . $result->getPublishedAt();
+				) . ": " . $result->getTagName() . " | " . __("DATE", "DEVICE_UPDATE") . " " . $result->getPublishedAt()->format('Y-m-d');
 		} catch (Throwable $e) {
 			$error = TRUE;
 			$msg   .= __("AUTO_ERROR_DOWNLOAD", "DEVICE_UPDATE") . "<br/>" . $e->getMessage();
@@ -217,8 +209,9 @@ $otaHelper = new OtaHelper($Config, _BASEURL_);
 
 $firmwareChecker = new FirmwareChecker(GuzzleFactory::getClient($Config));
 
+$checkForFirmware = $Config->read("update_be_check") === "1";
 
-if (!$firmwareChecker->isValid($otaHelper->getFirmwareUrl($minimal_firmware_path))) {
+if ($checkForFirmware && !empty($minimal_firmware_path) && !$firmwareChecker->isValid($otaHelper->getFirmwareUrl($minimal_firmware_path))) {
     $error = true;
     $msg = __("FIRMWARE_NOT_ACCESSIBLE", "DEVICE_UPDATE", [
         __("UPLOAD_FIRMWARE_MINIMAL_LABEL", "DEVICE_UPDATE"),
@@ -226,7 +219,7 @@ if (!$firmwareChecker->isValid($otaHelper->getFirmwareUrl($minimal_firmware_path
         ]) . "<br>" .  __("FIRMWARE_NOT_ACCESSIBLE_HELP", "DEVICE_UPDATE");
 }
 
-if (!$firmwareChecker->isValid($otaHelper->getFirmwareUrl($new_firmware_path))) {
+if ($checkForFirmware &&  !$firmwareChecker->isValid($otaHelper->getFirmwareUrl($new_firmware_path))) {
     $error = true;
     $msg = __("FIRMWARE_NOT_ACCESSIBLE", "DEVICE_UPDATE",[
         __("UPLOAD_FIRMWARE_FULL_LABEL", "DEVICE_UPDATE"),
@@ -287,9 +280,9 @@ if (!$firmwareChecker->isValid($otaHelper->getFirmwareUrl($new_firmware_path))) 
 				  method='post'
 				  action='<?php echo _BASEURL_; ?>device_update'
 			>
-				<input type='hidden' name='minimal_firmware_path' value='<?php echo $minimal_firmware_path; ?>'>
 				<input type='hidden' name='new_firmware_path' value='<?php echo $new_firmware_path; ?>'>
-				
+				<input type='hidden' name='target_version' value='<?php echo $targetVersion; ?>'>
+
 				<div class='form-row mb-3'>
 					<div class='offset-1 col-auto col col-auto'>
 						<button type='submit' class='btn btn-success' name='submit' value='submit'>
@@ -766,7 +759,7 @@ if (!$firmwareChecker->isValid($otaHelper->getFirmwareUrl($new_firmware_path))) 
 		</div>
 	</div>
 	<script>
-        $(document).on("ready", function ()
+        $(document).ready(function()
         {
             //select all checkboxes
             $(".select_all").change(function ()
@@ -808,6 +801,6 @@ if (!$firmwareChecker->isValid($otaHelper->getFirmwareUrl($new_firmware_path))) 
         });
 	</script>
 	
-	<script src="<?php echo UrlHelper::JS("devices"); ?>"></script>
+	<script src="<?php echo $urlHelper->js("devices"); ?>"></script>
 <?php endif; ?>
 

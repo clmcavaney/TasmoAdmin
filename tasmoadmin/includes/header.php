@@ -21,6 +21,8 @@ else {
 }
 
 
+$urlHelper = $container->get(UrlHelper::class);
+
 ?>
 <html lang="<?php echo $lang; ?>" xmlns="http://www.w3.org/1999/html">
 	<head>
@@ -94,123 +96,59 @@ else {
 		
 		<title><?php echo isset($title) ? $title . " - " : ""; ?>TasmoAdmin</title>
 		<script type="application/javascript">
-            var _BASEURL_ = "<?php echo _BASEURL_; ?>";
-            var _RESOURCESURL_ = "<?php echo _RESOURCESURL_; ?>";
-            var nightmodeconfig = "<?php echo $Config->read("nightmode"); ?>";
+            const config = {
+                base_url: window.location.origin + '<?php echo _BASEURL_; ?>',
+                resource_url: '<?php echo _RESOURCESURL_; ?>',
+                nightmodeconfig: '<?php echo $Config->read("nightmode"); ?>',
+                update_fe_check: <?php echo $Config->read("update_fe_check"); ?> === 1,
+                force_upgrade: <?php echo $Config->read("force_upgrade"); ?> === 1,
+            };
 		</script>
-		<script src="<?php echo UrlHelper::JS("jquery-ui/jquery-ui-1.12.1.custom/external/jquery/jquery"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("jquery-ui/jquery-ui-1.12.1.custom/jquery-ui"); ?>"></script>
-		<script>
-            /*** Handle jQuery plugin naming conflict between jQuery UI and Bootstrap ***/
-            $.widget.bridge("uibutton", $.ui.button);
-            $.widget.bridge("uitooltip", $.ui.tooltip);
-		</script>
-		<script src="<?php echo UrlHelper::JS("bootstrap/bootstrap.bundle"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("i18n/jquery.i18n"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("i18n/jquery.i18n.messagestore"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("i18n/jquery.i18n.fallbacks"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("i18n/jquery.i18n.parser"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("i18n/jquery.i18n.emitter"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("i18n/jquery.i18n.language"); ?>"></script>
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/bs" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/dsb" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/fi" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/ga" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/he" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/hsb" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/hu" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/hy" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/la" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/ml" ); ?><!--"></script>-->
-		<!--	<script src="--><?php //echo UrlHelper::JS( "i18n/languages/os" ); ?><!--"></script>-->
-		<script src="<?php echo UrlHelper::JS("i18n/languages/ru"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("i18n/languages/sl"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("i18n/languages/uk"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("jquery", "node_modules/jquery/dist/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("bootstrap.bundle", "node_modules/bootstrap/dist/js/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("jquery.i18n", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("jquery.i18n.messagestore", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("jquery.i18n.fallbacks", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("jquery.i18n.parser", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("jquery.i18n.emitter", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("jquery.i18n.language", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/bs" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/dsb" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/fi" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/ga" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/he" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/hsb" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/hu" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/hy" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/la" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/ml" ); ?><!--"></script>-->
+		<!--	<script src="--><?php //echo $urlHelper->js( "i18n/languages/os" ); ?><!--"></script>-->
+		<script src="<?php echo $urlHelper->js("languages/ru", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("languages/sl", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("languages/uk", "node_modules/@wikimedia/jquery.i18n/src/"); ?>"></script>
 		
-		<script src="<?php echo UrlHelper::JS("js-cookie/js-cookie"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("tablesaw/tablesaw.stackonly.jquery"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("tablesaw/tablesaw-init"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("bootstrap-waitingfor/waitingfor"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("libs/jqDoubleScroll/jquery.doubleScroll"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("libs/jquery.svgInject/jquery.svgInject"); ?>"></script>
-		<!--	<script src="--><?php //echo _RESOURCESURL_; ?><!--js/moment-js/moment-with-locales.js"></script>-->
+		<script src="<?php echo $urlHelper->js("js.cookie", "node_modules/js-cookie/dist/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("tablesaw.jquery", "node_modules/tablesaw/dist/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("tablesaw-init", "node_modules/tablesaw/dist/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("bootstrap-waitingfor", "node_modules/bootstrap-waitingfor/build/"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("jquery.doubleScroll", "node_modules/jqdoublescroll/"); ?>"></script>
+
+		<script src="<?php echo $urlHelper->js("Sonoff"); ?>"></script>
+		<script src="<?php echo $urlHelper->js("app"); ?>"></script>
+
+		<link href="<?php echo $urlHelper->style("bootstrap", "node_modules/bootstrap/dist/css/"); ?>" rel="stylesheet">
+		<link href="<?php echo $urlHelper->style("all", "node_modules/@fortawesome/fontawesome-free/css/"); ?>" rel="stylesheet">
+		<link href="<?php echo $urlHelper->style("tablesaw", "node_modules/tablesaw/dist/"); ?>" rel="stylesheet">
+		<link href="<?php echo $urlHelper->style("tablesaw.stackonly", "node_modules/tablesaw/dist/stackonly/"); ?>" rel="stylesheet">
 		
-		<script src="<?php echo UrlHelper::JS("Sonoff"); ?>"></script>
-		<script src="<?php echo UrlHelper::JS("app"); ?>"></script>
-		
-		<link href="<?php echo UrlHelper::STYLES("bootstrap/bootstrap"); ?>" rel="stylesheet">
-		<link href="<?php echo UrlHelper::STYLES("../js/jquery-ui/jquery-ui-1.12.1.custom/jquery-ui"); ?>"
-			  rel="stylesheet"
-		>
-		
-		<link href="<?php echo UrlHelper::STYLES("fontawesome/css/all"); ?>" rel="stylesheet">
-		<link href="<?php echo UrlHelper::STYLES("tablesaw/tablesaw"); ?>" rel="stylesheet">
-		<link href="<?php echo UrlHelper::STYLES("tablesaw/tablesaw.stackonly"); ?>" rel="stylesheet">
-		
-		<link href="<?php echo UrlHelper::STYLES("all"); ?>" rel="stylesheet">
+		<link href="<?php echo $urlHelper->style("all"); ?>" rel="stylesheet">
 		
 		<?php if (@file_exists(_RESOURCESDIR_ . "css/custom.css")): ?>
-			<link href="<?php echo UrlHelper::STYLES("custom"); ?>" rel="stylesheet">
+			<link href="<?php echo $urlHelper->style("custom"); ?>" rel="stylesheet">
 		<?php endif; ?>
 	
 	</head>
-	<body class='<?php echo $nightmode; ?> <?php echo($Config->read("minimize_resources") == 0 ? "debug" : ""); ?>'>
-		
-		
-		<?php
-		/**
-		 * Bootstrap debug helper
-		 * set minimize_resources in config to 0 to activate.
-		 */
-		if ($Config->read("minimize_resources") == 0): ?>
-			<div class='bs-debugger' style='width: 100%; color: red;'>
-				<div class='current d-inline-block'>
-				
-				</div>
-				<div class='bp d-inline-block float-right'>
-					340,576,768,992,1200
-				</div>
-			</div>
-			<script>
-                var TO = false;
-                var resizeEvent = "onorientationchange" in window ? "orientationchange" : "resize";
-                $(window).bind(resizeEvent, function ()
-                {
-                    TO && clearTimeout(TO);
-                    TO = setTimeout(resizeBody, 100);
-                });
-                resizeBody();
-
-                function resizeBody()
-                {
-                    var height = window.innerHeight || $(window).height();
-                    var width = window.innerWidth || $(window).width();
-                    var col = "col ";
-                    if (width <= 340)
-                    {
-                        col += " > col-xs";
-                    }
-                    if (width >= 576)
-                    {
-                        col += " > col-sm";
-                    }
-                    if (width >= 768)
-                    {
-                        col += " > col-md";
-                    }
-                    if (width >= 992)
-                    {
-                        col += " > col-lg";
-                    }
-                    if (width >= 1200)
-                    {
-                        col += " > col-xl";
-                    }
-                    var size = col + " (" + width + " x " + height + ")";
-                    $(".bs-debugger .current").html(size);
-                }
-			</script>
-		<?php endif; ?>
+	<body class='<?php echo $nightmode; ?>'>
 		<header>
 			<nav class="navbar navbar-expand-sm navbar-dark bg-dark fixed-top py-1">
 				<?php //var_dump( $page ); ?>

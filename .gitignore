@@ -17,17 +17,19 @@
 /tasmoadmin/tasmoadmin/resources/css/custom.min.css
 /tasmoadmin/resources/css/custom.css
 /tasmoadmin/resources/css/custom.min.css
+/tasmoadmin/resources/css/*.min.css
 /tasmoadmin/resources/js/*.min.js
 
 /tasmoadmin/data/updates/*.zip
-
+/tasmoadmin/.version
 
 /tasmoadmin/dev/*
 
 /tasmoadmin/node_modules/
 /tasmoadmin/vendor/
 .phpunit.result.cache
-
+/tasmoadmin/coverage.xml
+.php-cs-fixer.cache
 
 !.empty
 !.htaccess

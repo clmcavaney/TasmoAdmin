@@ -1,28 +1,20 @@
-var Sonoff;
-var refreshtime = false;
-var nightmode = false;
-$(document).on("ready", function ()
+let sonoff;
+let refreshtime = false;
+let nightmode = false;
+
+const lang = $("html").attr("lang");
+const i18nfile = config.base_url + "tmp/cache/i18n/json_i18n_" + lang + ".cache.json";
+$.ajax({
+	dataType: "json",
+	url: i18nfile,
+	async: false,
+	success: (data) => $.i18n().load(data)
+});
+
+$(document).ready(function()
 {
-
-	var $lang = $("html").attr("lang");
-	var i18nfile = _BASEURL_ + "tmp/cache/i18n/json_i18n_" + $lang + ".cache.json";
-	//console.log( i18nfile );
-
-	$.ajax({
-			   dataType: "json",
-			   url: i18nfile,
-			   async: false,
-			   success: function (data)
-			   {
-
-				   $.i18n().load(data);
-			   }
-		   });
-
-
-	checkNightmode(nightmodeconfig || "auto");
+	checkNightmode(config.nightmodeconfig || "auto");
 	checkForUpdate(true);
-
 
 	$(".double-scroll").doubleScroll(
 		{
@@ -44,9 +36,7 @@ $(document).on("ready", function ()
 	 * Sonoff Handler
 	 * @type {Sonoff}
 	 */
-
-
-	Sonoff = new Sonoff({timeout: 15});
+	sonoff = new Sonoff({timeout: 15});
 
 	$("[title][title!=\"\"]").tooltip({
 										  html: true,
@@ -73,7 +63,7 @@ $(document).on("ready", function ()
 		e.preventDefault();
 		if ($(this).hasClass("update-now") || $("#versionHolder").data("update-check") === "0")
 		{
-			window.location.href = _BASEURL_ + "selfupdate";
+			window.location.href = config.base_url + "selfupdate";
 		} else
 		{
 			checkForUpdate(false);
@@ -87,7 +77,7 @@ $(document).on("ready", function ()
 	{
 		var replace = replace || false;
 		var loader = $("<div>", {class: "loader"}).append(
-			$("img", {src: _RESOURCESURL_ + "img/loading.gif"}));
+			$("img", {src: config.resource_url + "img/loading.gif"}));
 
 		if (replace)
 		{

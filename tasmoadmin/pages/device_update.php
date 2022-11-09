@@ -5,14 +5,18 @@ use TasmoAdmin\Helper\UrlHelper;
 
 $otaHelper = new OtaHelper($Config, _BASEURL_);
 
-if (!empty($_REQUEST['minimal_firmware_path'])) {
-    $ota_minimal_firmware_url = $otaHelper->getFirmwareUrl($_REQUEST['minimal_firmware_path']);
-}
+$ota_new_firmware_url = '';
+$target_version = '';
+
 if (!empty($_REQUEST['new_firmware_path'])) {
     $ota_new_firmware_url = $otaHelper->getFirmwareUrl($_REQUEST['new_firmware_path']);
 }
+if (!empty($_REQUEST['target_version'])) {
+    $target_version = ($_REQUEST['target_version']);
+}
 
 $device_ids = $_REQUEST["device_ids"] ?? FALSE;
+
 ?>
 <div class='row justify-content-sm-center'>
     <div class='col col-12 col-md-8 '>
@@ -31,16 +35,20 @@ $device_ids = $_REQUEST["device_ids"] ?? FALSE;
                 </button>
             </div>
         <?php else: ?>
-            <div id='progressbox' class='mt-3 border border-dark p-3 pre-scrollable'>
+            <div id='logGlobal' class='mt-3 border p-3'>
 
             </div>
 
-        <input type='hidden' id='ota_minimal_firmware_url' value='<?php echo $ota_minimal_firmware_url ?? ""; ?>'>
-        <input type='hidden' id='ota_new_firmware_url' value='<?php echo $ota_new_firmware_url ?? ""; ?>'>
+            <div id='progressbox' class='mt-3 border border-dark p-3'>
+
+            </div>
+
+        <input type='hidden' id='ota_new_firmware_url' value='<?php echo $ota_new_firmware_url; ?>'>
+        <input type='hidden' id='target_version' value='<?php echo $target_version; ?>'>
             <script>
-                var device_ids = '<?php echo json_encode($device_ids); ?>';
+                const device_ids = '<?php echo json_encode($device_ids); ?>';
             </script>
-            <script src="<?php echo UrlHelper::JS("device_update"); ?>"></script>
+            <script src="<?php echo $urlHelper->js("device_update"); ?>"></script>
         <?php endif; ?>
     </div>
 </div>

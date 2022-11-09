@@ -56,12 +56,6 @@ $devices = $Sonoff->getDevices();
 												     data-toggle='tooltip'
 												     title='Searching...'
 												>
-													<img src="<?php echo _RESOURCESURL_
-													                     ."css/fontawesome/signal-solid.svg"; ?>"
-													     alt="%" class='svg-inject searching '
-													     width='30px'
-													     height='30px'
-													>
 												</div>
 											</div>
 										</div>
@@ -187,4 +181,4 @@ $devices = $Sonoff->getDevices();
 <?php endif; ?>
 <?php include "elements/modal_delete_device.php"; ?>
 
-<script src="<?php echo UrlHelper::JS("devices_details"); ?>"></script>
+<script src="<?php echo $urlHelper->js("devices_details"); ?>"></script>
